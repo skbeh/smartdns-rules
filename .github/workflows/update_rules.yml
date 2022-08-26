@@ -15,28 +15,32 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Update Dependencies
-        run: sudo apt install -y dos2unix pigz
+        run: |
+          sudo apt install -y pigz
+          pip install --upgrade aiohttp more_itertools validators
 
       - name: Set Last Author
         run: echo "LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')" >> "$GITHUB_ENV"
 
       - name: Get Rules
-        run: echo $LAST_COMMIT_AUTHOR && ./update_rules.sh
+        run: |
+          python3 update_rules.py all_rules.conf
+          pigz --no-name -11 --oneblock --iterations 100 all_rules.conf
 
       - name: Update Rules
         uses: stefanzweifel/git-auto-commit-action@v4
         if: ${{ env.LAST_COMMIT_AUTHOR == 'github-actions[bot]' }}
         with:
           commit_message: Automated update rules
-          file_pattern: rules rules.tar.gz
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
-          commit_options: "--amend --no-edit"
-          push_options: "--force"
+          file_pattern: all_rules.conf.gz
+          commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+          commit_options: '--amend --no-edit'
+          push_options: '--force'
 
       - name: Commit Rules
         uses: stefanzweifel/git-auto-commit-action@v4
         if: ${{ env.LAST_COMMIT_AUTHOR != 'github-actions[bot]' }}
         with:
           commit_message: Automated update rules
-          file_pattern: rules rules.tar.gz
-          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          file_pattern: all_rules.conf.gz
+          commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'

@@ -16,7 +16,6 @@ pushd "$TEMPDIR"
 
 # update config file
 wget_no_verbose -qO- 'https://raw.githubusercontent.com/vokins/yhosts/master/dnsmasq/union.conf' | sed 's/=\/./ \//; s/0.0.0.0/#/' - >yhosts_union.ad.conf.tmp &
-wget_no_verbose -O yhosts_ip.conf.tmp 'https://raw.githubusercontent.com/vokins/yhosts/master/dnsmasq/ip.conf' &
 wget_no_verbose -qO- 'https://cokebar.github.io/gfwlist2dnsmasq/dnsmasq_gfwlist.conf' | sed 's/127.0.0.1#5353/secure/; s/server/nameserver/' - >gfwlist.conf.tmp &
 wget_no_verbose -O googlehosts.conf.tmp 'https://raw.githubusercontent.com/googlehosts/hosts/master/hosts-files/dnsmasq.conf' &
 wget_no_verbose -O googlehosts_ipv6.conf.tmp 'https://raw.githubusercontent.com/googlehosts/hosts-ipv6/master/hosts-files/dnsmasq.conf' &
