@@ -25,6 +25,7 @@ jobs:
       - name: Get Rules
         run: |
           python3 update_rules.py all_rules.conf
+          rm -f all_rules.conf.gz
           pigz --no-name -11 --oneblock --iterations 100 all_rules.conf
 
       - name: Update Rules
