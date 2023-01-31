@@ -15,6 +15,8 @@ from validators.ip_address import ipv4 as ipv4_validator
 from validators.ip_address import ipv6 as ipv6_validator
 from validators.url import url as url_validator
 
+from pytrie import Trie
+
 
 @unique
 class RuleFormat(IntEnum):
@@ -352,30 +354,53 @@ def output(outfile: TextIOWrapper) -> None:
         assert False, filtered_list
 
     def remove_included(rule_set: set[SplittedPlainRule]) -> None:
-        local_rule_set = rule_set.copy()
+        local_rule_list = list(map(lambda rule: tuple(reversed(rule[0])), rule_set))
+        trie = Trie.fromkeys(local_rule_list)
 
-        for rule in local_rule_set:
-            for another_rule in local_rule_set:
-                if rule != another_rule and another_rule[0][-len(rule[0]) :] == rule[0]:
-                    try:
-                        rule_set.remove(another_rule)
-                    except KeyError:
-                        if rule not in local_rule_set:
-                            raise
+        for domain in local_rule_list:
+            covered_plain_domain_set: set[tuple[str]] = set(
+                map(
+                    lambda domain_tuple: tuple(reversed(domain_tuple[0])),
+                    trie.iter_prefix_items(domain),
+                )
+            )
+            try:
+                covered_plain_domain_set.remove(tuple(reversed(domain)))
+            except KeyError:
+                pass
+            if next(iter(rule_set))[1] is None:
+                covered_domain_set = set(
+                    map(lambda domain: (domain, None), covered_plain_domain_set)
+                )
+                covered_domain_set.intersection_update(rule_set)
+                rule_set -= covered_domain_set
 
     def remove_ignore(
         rule_set: set[SplittedPlainRule], ignore_rule_set: set[SplittedPlainRule]
     ) -> None:
-        local_rule_set = rule_set.copy()
+        # local_rule_set = rule_set.copy()
 
-        for ignore_rule in ignore_rule_set:
-            for rule in local_rule_set:
-                if rule[0][-len(ignore_rule[0]) :] == ignore_rule[0]:
-                    try:
-                        rule_set.remove(rule)
-                    except KeyError:
-                        if rule not in local_rule_set:
-                            raise
+        # for ignore_rule in ignore_rule_set:
+        #     for rule in local_rule_set:
+        #         if rule[0][-len(ignore_rule[0]) :] == ignore_rule[0]:
+        #             try:
+        #                 rule_set.remove(rule)
+        #             except KeyError:
+        #                 if rule not in local_rule_set:
+        #                     raise
+        return
+        rule_list = list(map(lambda rule: tuple(reversed(rule[0])), rule_set))
+        trie = Trie.fromkeys(rule_list)
+
+        for domain, _ in ignore_rule_set:
+            covered_domain_set: set[tuple[str]] = set(
+                map(
+                    lambda domain_tuple: domain_tuple[0], trie.iter_prefix_items(domain)
+                )
+            )
+            # print(covered_domain_set)
+            covered_domain_set.intersection_update(rule_set)
+            rule_set -= covered_domain_set
 
     entire_set: set[SplittedRule] = reduce(
         lambda latest_set, current_set: latest_set.union(current_set),
