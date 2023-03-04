@@ -1,0 +1,47 @@
+name: Update Rules
+
+on:
+  push:
+  schedule:
+    - cron: 0 0 * * *
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Update Dependencies
+        run: |
+          sudo apt install -y pigz
+          pip install --upgrade aiohttp more_itertools validators
+
+      - name: Set Last Author
+        run: echo "LAST_COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an')" >> "$GITHUB_ENV"
+
+      - name: Get Rules
+        run: |
+          python3 update_rules.py all_rules.conf block.list
+          rm -f all_rules.conf.gz block.list.gz
+          pigz --no-name -11 --oneblock --iterations 100 all_rules.conf block.list
+
+      - name: Update Rules
+        uses: stefanzweifel/git-auto-commit-action@v4
+        if: ${{ env.LAST_COMMIT_AUTHOR == 'github-actions[bot]' }}
+        with:
+          commit_message: Automated update rules
+          file_pattern: all_rules.conf.gz block.list.gz
+          commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+          commit_options: '--amend --no-edit'
+          push_options: '--force'
+
+      - name: Commit Rules
+        uses: stefanzweifel/git-auto-commit-action@v4
+        if: ${{ env.LAST_COMMIT_AUTHOR != 'github-actions[bot]' }}
+        with:
+          commit_message: Automated update rules
+          file_pattern: all_rules.conf.gz block.list.gz
+          commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'

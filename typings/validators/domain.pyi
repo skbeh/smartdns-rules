@@ -1,0 +1,6 @@
+from _typeshed import Incomplete
+
+pattern: Incomplete
+
+def to_unicode(obj, charset: str = ..., errors: str = ...): ...
+def domain(value): ...
